@@ -22,16 +22,17 @@ import java.util.Map;
 public class MRPExcelReader {
     public static void main(String[] args) {
         // 批次
-        int piCi = 120;
+        int piCi = 40;
         // 批数量
-        int pNumber = 74666;
-        double computedResult = piCi * pNumber * 1.0;
-        String filePath = "C:\\Users\\binwine\\Desktop\\工作簿1.xlsx";
+        int pNumber = 72000;
+        double computedResult = 720000;
+        double computedResult1 = 15*48000;
+        String filePath = "D:\\limit\\example.xlsx";
 
         try {
             // 1. 读取Excel文件
             Workbook workbook = readExcel(filePath);
-            Sheet sheet = workbook.getSheetAt(0);
+            Sheet sheet = workbook.getSheetAt(4);
 
             CellStyle referenceStyle = sheet.getRow(0).getCell(4).getCellStyle();
             // 创建相同样式的新样式对象
@@ -67,15 +68,10 @@ public class MRPExcelReader {
                 }
                 // 读取E列数据
                 // 获取参考单元格的样式
-                Cell referenceCell = row.getCell(4);
-                String componentV1 = referenceCell.getStringCellValue();
-                // 读取H列和I列数据
-                double fenZi = getNumericCellValue(row.getCell(7)); // H列
-                double fenMu = getNumericCellValue(row.getCell(8)); // I列
-
                 // 获取下一行E列的值
-                if (row.getCell(4).getStringCellValue().equals("")) {
+                if (row.getCell(4)==null || row.getCell(4).getStringCellValue().equals("")) {
                     // 获取下一行B列的值 将map里面的值给computedResult
+                    if (rowNum ==sheet.getLastRowNum()) break;
                     Row row1 = sheet.getRow(rowNum + 1);
                     String key = row1.getCell(1).getStringCellValue();
                     if (zuJianMap.containsKey(key)) {
@@ -83,12 +79,25 @@ public class MRPExcelReader {
                     }
                     continue;
                 }
+                Cell referenceCell = row.getCell(4);
+                String componentV1 = referenceCell.getStringCellValue();
+                // 读取H列和I列数据
+                double fenZi = getNumericCellValue(row.getCell(7)); // H列
+                double fenMu = getNumericCellValue(row.getCell(8)); // I列
 //                column8Data.add(fenZi);
 //                column9Data.add(fenMu);
                 // 计算MRP结果（替换为您的实际计算逻辑）
+                String stringCellValue = row.getCell(0).getStringCellValue();
+                if (stringCellValue.equals("BOM-A01103000045")) {
+                    computedResult = computedResult1;
+                }
                 double calculatedValue = calculateMrp(fenZi, fenMu, computedResult);
                 calculatedResults.add(calculatedValue);
-                zuJianMap.put(componentV1, calculatedValue);
+                if (!zuJianMap.containsKey(componentV1)) {
+                    zuJianMap.put(componentV1, calculatedValue);
+                } else {
+                    zuJianMap.put(componentV1, zuJianMap.get(componentV1) + calculatedValue);
+                }
                 // 将结果写入J列（第10列，索引9）
                 Cell resultCell = row.createCell(9); // J列
                 resultCell.setCellValue(calculatedValue);
@@ -111,21 +120,21 @@ public class MRPExcelReader {
     }
 
     // 读取Excel文件
-    private static Workbook readExcel(String filePath) throws IOException {
+    public static Workbook readExcel(String filePath) throws IOException {
         try (FileInputStream fileInputStream = new FileInputStream(new File(filePath))) {
             return WorkbookFactory.create(fileInputStream);
         }
     }
 
     // 保存工作簿到原文件
-    private static void saveWorkbook(Workbook workbook, String filePath) throws IOException {
+    public static void saveWorkbook(Workbook workbook, String filePath) throws IOException {
         try (FileOutputStream outputStream = new FileOutputStream(filePath)) {
             workbook.write(outputStream);
         }
     }
 
     // 安全获取数值型单元格值
-    private static double getNumericCellValue(Cell cell) {
+    public static double getNumericCellValue(Cell cell) {
         if (cell == null || cell.getCellType() == CellType.BLANK) {
             return 0.0;
         }
@@ -142,7 +151,7 @@ public class MRPExcelReader {
     }
 
     // MRP计算逻辑（示例）
-    private static double calculateMrp(double zi, double mu, double computedResult) {
+    public static double calculateMrp(double zi, double mu, double computedResult) {
         return computedResult / mu * zi;
     }
 }
